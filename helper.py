@@ -9,8 +9,8 @@ from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 import sys
-import pysqlite3
-sys.modules["sqlite3"] = pysqlite3
+# import pysqlite3
+# sys.modules["sqlite3"] = pysqlite3
 
 #Loading the model it it doesn't require the api key
 
