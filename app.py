@@ -4,9 +4,9 @@ import os
 import helper
 #For removing the error
 os.environ["STREAMLIT_DISABLE_WATCHDOG_WARNING"] = "true"
-import sys
-import pysqlite3
-sys.modules["sqlite3"] = pysqlite3
+# import sys
+# import pysqlite3
+# sys.modules["sqlite3"] = pysqlite3
 
 st.set_page_config(layout="wide")  # Enable wide layout
 st.title("🎥 Question Answer With Video")
