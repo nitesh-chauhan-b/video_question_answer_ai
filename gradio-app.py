@@ -11,7 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 import pickle
 from langchain_chroma import Chroma
-
+import textwrap
 
 #Using faster whisper model
 from faster_whisper import WhisperModel
@@ -141,8 +141,20 @@ def answer_question(question):
     global  chain
 
     if chain is not None:
+
         result = chain(question)
-        return result["result"]
+
+        #For formatting the answer
+        answer_text = result["result"]
+        md = f"""# Answer
+        
+{answer_text}
+
+---
+_This answer is auto-generated from the video transcription._"""
+
+        return textwrap.dedent(md)
+        # return
 
     return "Sorry, Something went wrong"
 
