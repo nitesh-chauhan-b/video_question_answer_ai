@@ -1,12 +1,15 @@
 import streamlit as st
 import tempfile
 import os
-import helper
 #For removing the error
 os.environ["STREAMLIT_DISABLE_WATCHDOG_WARNING"] = "true"
-# import sys
-# import pysqlite3
-# sys.modules["sqlite3"] = pysqlite3
+
+# The trick is to import before the chromadb is imported in any files
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+import helper
 
 st.set_page_config(layout="wide")  # Enable wide layout
 st.title("🎥 Question Answer With Video")
