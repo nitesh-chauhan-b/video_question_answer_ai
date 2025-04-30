@@ -21,7 +21,6 @@ model = WhisperModel(
     "base",
     device="cpu",
     compute_type="int8",
-
 )
 
 #Embeddings for vector db
@@ -122,15 +121,19 @@ def get_qa_chain(db):
 
 def handle_video_change(video_input):
     global transcript_text
+    print("Transcribing the video....")
     transcript_text = get_video_content(video_input)
 
+    print("Storing the transcription into database....")
     #Storing the data
     db = store_data(transcript_text)
 
     #Getting question answer chain
     global  chain
+    print("Creating a question answer chain...")
     chain = get_qa_chain(db)
 
+    print("Ready to answer your questions!!")
     return transcript_text
 
 def answer_question(question):
