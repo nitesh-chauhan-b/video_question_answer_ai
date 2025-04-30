@@ -5,9 +5,9 @@ import os
 os.environ["STREAMLIT_DISABLE_WATCHDOG_WARNING"] = "true"
 
 # The trick is to import before the chromadb is imported in any files
-__import__('pysqlite3')
+# __import__('pysqlite3')
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import helper
 
@@ -24,8 +24,6 @@ if uploaded_file is not None:
 
     # Get video path
     video_path = tfile.name
-
-
 
     # Layout: Two columns
     col1, col2 = st.columns([2, 2])  # 2:1 width ratio
@@ -48,6 +46,7 @@ if uploaded_file is not None:
             helper.store_data(video_transcript)
 
             # Getting Question answer chain
+            # if db:
             chain = helper.get_qa_chain()
 
             print("Success!!")

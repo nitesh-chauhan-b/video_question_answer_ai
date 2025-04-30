@@ -7,7 +7,8 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
-
+from langchain_community.vectorstores import FAISS
+import pickle
 from langchain_chroma import Chroma
 
 #Loading the model it it doesn't require the api key
@@ -59,6 +60,7 @@ def get_video_content(path):
     #Combining segments to get the transcribes test
     video_transcript = "".join([seg.text for seg in segments])
 
+    print(video_transcript)
     return video_transcript
 
 def store_data(video_transcription):
@@ -71,11 +73,22 @@ def store_data(video_transcription):
 
     chunks = splitter.split_text(video_transcription)
 
-    db = Chroma.from_texts(chunks, embedding, collection_name="video_transcription", persist_directory="./chroma_db")
+    # db = Chroma.from_texts(chunks, embedding, collection_name="video_transcription", persist_directory="./chroma_db")
+    # db = Chroma.from_texts(chunks, embedding, collection_name="video_transcription")
+
+    db = FAISS.from_texts(chunks,embedding)
+
+    #Saving vector store into pickle file
+    with open("vectore_db.pkl","wb") as file:
+        pickle.dump(db,file)
+
+    # return db
 
 def get_qa_chain():
-    if os.path.exists("chroma_db"):
-        db = Chroma(persist_directory="./chroma_db", embedding_function=embedding)
+    if os.path.exists("vectore_db.pkl"):
+        with open("vectore_db.pkl", "rb") as file:
+            # db = Chroma(persist_directory="./chroma_db", embedding_function=embedding)
+            db = pickle.load(file)
 
     #Getting db as retiver
     retriever = db.as_retriever()
@@ -132,11 +145,13 @@ if __name__ == "__main__":
         video_transcript = get_video_content(video_path)
 
         print("Storing the data...")
-        store_data(video_transcript)
+        db = store_data(video_transcript)
 
         print("Creating the QA Chain")
-        chain = get_qa_chain()
 
+        # if os.path.exists("chroma_db"):
+        # if db:
+        chain = get_qa_chain(db)
         query = "What is string?"
 
         response = chain(query)
