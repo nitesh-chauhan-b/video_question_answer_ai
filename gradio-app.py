@@ -1,5 +1,6 @@
-import os.path
-
+import gradio as gr
+import whisper
+from transformers import pipeline
 from dotenv import load_dotenv
 load_dotenv()
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,11 +12,6 @@ from langchain_community.vectorstores import FAISS
 import pickle
 from langchain_chroma import Chroma
 
-#Loading the model it it doesn't require the api key
-
-# import whisper
-#
-# model = whisper.load_model("turbo")
 
 #Using faster whisper model
 from faster_whisper import WhisperModel
@@ -37,19 +33,16 @@ llm = ChatGroq(
     max_tokens=1000
 )
 
+qa_pipeline = pipeline("question-answering")
+
+# Storage for transcribed text
+transcript_text = ""
+
+#Chian
+chain = None
 
 def get_video_content(path):
     # Original Whisper model
-
-    # result = model.transcribe(path,verbose=True)
-    # # Getting the results from the file
-    # video_transcription = result["text"]
-    # # print(result["text"])
-    #
-    # return video_transcription
-
-    #Loading faster whisper model
-
     #It uses the segments and to divide video into segments
     segments,info = model.transcribe(
         path,
@@ -63,8 +56,8 @@ def get_video_content(path):
     print(video_transcript)
     return video_transcript
 
-def store_data(video_transcription):
 
+def store_data(video_transcription):
     splitter = RecursiveCharacterTextSplitter(
         separators=[".", "\n", "\n\n"],
         chunk_size=1000,
@@ -84,7 +77,7 @@ def get_qa_chain(db):
     #         # db = Chroma(persist_directory="./chroma_db", embedding_function=embedding)
     #         db = pickle.load(file)
 
-    #Getting db as retriever
+    # Getting db as retriever
     retriever = db.as_retriever()
 
     # Creating a template for getting answers
@@ -102,9 +95,9 @@ def get_qa_chain(db):
         The answer should be as direct and informative as possible without referencing the specific context.
         If an example is provided, format it clearly to make it easier to follow.
         If the content doesn’t answer the question directly, provide a concise and polite response indicating that the answer is unknown.
-        
+
         Content: {context}
-        
+
         QUESTION: {question}
 
         Ensure the response is clear, with simple explanations and structured examples if necessary. Avoid making unnecessary references to the source material directly.
@@ -114,8 +107,6 @@ def get_qa_chain(db):
         input_variables=["context", "question"],
         template=template
     )
-
-
 
     # Creating a question answer chain
     chain = RetrievalQA.from_chain_type(
@@ -129,27 +120,48 @@ def get_qa_chain(db):
 
     return chain
 
+def handle_video_change(video_input):
+    global transcript_text
+    transcript_text = get_video_content(video_input)
 
-if __name__ == "__main__":
+    #Storing the data
+    db = store_data(transcript_text)
 
-    video_path= "resource/python_string_method.mp4"
+    #Getting question answer chain
+    global  chain
+    chain = get_qa_chain(db)
 
-    try:
-        print("Converting video into text....")
-        video_transcript = get_video_content(video_path)
+    return transcript_text
 
-        print("Storing the data...")
-        db = store_data(video_transcript)
+def answer_question(question):
+    if not transcript_text:
+        return "Please upload a video and wait for transcription first."
 
-        print("Creating the QA Chain")
+    #getting the global chain
+    global  chain
 
-        # if os.path.exists("chroma_db"):
-        # if db:
-        chain = get_qa_chain(db)
-        query = "What is string?"
+    if chain is not None:
+        result = chain(question)
+        return result["result"]
 
-        response = chain(query)
+    return "Sorry, Something went wrong"
 
-        print("\n\nAnswer :\n",response["result"])
-    except Exception as e:
-        print("Something went wrong : ",e)
+with gr.Blocks() as app:
+    gr.Markdown("## 🎥 Video QA App")
+
+    with gr.Row():
+        with gr.Column(scale=2):
+            video_input = gr.Video(label="Upload Video")
+            transcribed_output = gr.Textbox(label="Transcribed Text", lines=10)
+
+        with gr.Column(scale=2):
+            question_input = gr.Textbox(label="Ask a question about the video")
+            ask_button = gr.Button("Get Answer")
+            answer_output = gr.Markdown(label="Answer")
+
+    video_input.change(fn=handle_video_change, inputs=video_input, outputs=transcribed_output)
+    ask_button.click(fn=answer_question, inputs=question_input, outputs=answer_output)
+
+
+if __name__ =="__main__":
+    app.launch()

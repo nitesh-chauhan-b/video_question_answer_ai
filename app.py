@@ -43,11 +43,11 @@ if uploaded_file is not None:
             # print(video_transcript)
 
             # Storing the data
-            helper.store_data(video_transcript)
+            db = helper.store_data(video_transcript)
 
             # Getting Question answer chain
             # if db:
-            chain = helper.get_qa_chain()
+            chain = helper.get_qa_chain(db)
 
             print("Success!!")
 
